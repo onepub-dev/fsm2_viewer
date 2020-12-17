@@ -1,16 +1,15 @@
 # fsm2_viewer
 
-A new Flutter project.
+FSM2 Viewer is a companion project to [FSM2](https://github.com/bsutton/fsm2).
 
-## Getting Started
+FSM2 allows you to programatically define Finite State Machines in Dart.
 
-This project is a starting point for a Flutter application.
+FSM2 provides an export option which exports the FSM to an smcat file.
 
-A few resources to get you started if this is your first Flutter project:
+The viewer can open an smcat file and have it rendered as an svg file.
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+The viewer is a flutter desktop application and currently it has only been tested on linux but should work on supported desktop platforms.
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![FSM2 View](images/app.png)
+
+
