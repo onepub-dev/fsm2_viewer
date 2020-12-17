@@ -389,12 +389,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
 enum Mode { one, two, twoByTwo, threeByThree }
 
-
 // class SelectedButton extends StatefulWidget
 // {
 //   @override
 //   State<StatefulWidget> createState() {
-//     return 
+//     return
 //   }
-  
+
 // }

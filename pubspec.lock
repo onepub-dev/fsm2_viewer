@@ -241,10 +241,10 @@ packages:
   fsm2:
     dependency: "direct main"
     description:
-      path: "../fsm2"
-      relative: true
-    source: path
-    version: "0.15.0"
+      name: fsm2
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.16.0"
   fuchsia_remote_debug_protocol:
     dependency: transitive
     description: flutter
