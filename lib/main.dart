@@ -1,24 +1,33 @@
+import 'dart:developer';
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' hide log;
 
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fsm2_viewer/src/providers/log_provider.dart';
+import 'package:fsm2_viewer/src/providers/svg_page_provider.dart';
+import 'package:fsm2_viewer/src/providers/svg_reload_provider.dart';
 import 'package:pluto_menu_bar/pluto_menu_bar.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:fsm2/fsm2.dart' hide State;
 
+import 'src/layout_buttons.dart';
+import 'src/page_buttons.dart';
+import 'src/providers/current_page.dart';
+import 'src/svg/svg_layout.dart';
+
 import 'src/svg/size.dart' as s;
 
 void main() {
-  runApp(MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, ScopedReader watch) {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
@@ -33,7 +42,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'FSM2 SVG Viewer'),
+      home: MyHomePage(title: 'FSM2 SMCAT Viewer'),
     );
   }
 }
@@ -61,13 +70,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   GlobalKey scaffoldKey = GlobalKey();
 
-  var pages = <SvgFile>[];
+  final largest = s.Size(0, 0);
 
   var currentPage = -1;
 
   String logBuffer = '';
-
-  var largest = s.Size(0, 0);
 
   final debugging = false;
 
@@ -88,20 +95,24 @@ class _MyHomePageState extends State<MyHomePage> {
             PlutoMenuBar(
               menus: getMenus(context),
             ),
-            getModeButtons(),
-            Expanded(child: getSvgLayout(context)),
-            Row(children: getButtons()),
-            buildDebugPanel()
+            LayoutButtons(),
+            Expanded(child: SVGLayout()),
+            PageButtons(),
+            buildDebugPanel(context)
           ],
         ),
       ),
     );
   }
 
-  Widget buildDebugPanel() {
+  Widget buildDebugPanel(BuildContext context) {
     return debugging
-        ? SizedBox(
-            height: 100, child: SingleChildScrollView(child: Text(logBuffer)))
+        ? Consumer(builder: (context, watch, _) {
+            final content = watch(logProvider.state);
+            return SizedBox(
+                height: 100,
+                child: SingleChildScrollView(child: Text(content)));
+          })
         : Container(width: 0, height: 0);
   }
 
@@ -114,7 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
           MenuItem(
             title: 'Open',
             icon: Icons.open_in_new,
-            onTap: () => openFile(),
+            onTap: () => openFile(context),
           ),
           MenuItem(
             title: 'Close',
@@ -137,263 +148,61 @@ class _MyHomePageState extends State<MyHomePage> {
         () => ScaffoldMessenger.of(context).showSnackBar(snackBar));
   }
 
-  void openFile() async {
-    FilePickerCross selectedFile = await FilePickerCross.importFromStorage(
-        type: FileTypeCross.any, fileExtension: 'svg');
+  void openFile(BuildContext context) async {
+    try {
+      FilePickerCross selectedFile = await FilePickerCross.importFromStorage(
+          type: FileTypeCross.any, fileExtension: 'smcat');
 
-    _smcatFolder = SMCatFolder(
-        folderPath: p.dirname(selectedFile.path),
-        basename: SMCatFolder.getBasename(selectedFile.path));
+      _smcatFolder = SMCatFolder(
+          folderPath: p.dirname(selectedFile.path),
+          basename: SMCatFolder.getBasename(selectedFile.path));
+      await _smcatFolder.generateAll();
 
-    var svgFile = SvgFile(selectedFile.path);
+      var smcatFile = SMCatFile(selectedFile.path);
 
-    pages.clear();
-    pages.addAll(_smcatFolder.listSvgs);
+      context.read(smcatPageProvider).loadPages(_smcatFolder.list);
 
-    findLargestPage();
+      context.read(currentPageProvider).currentPage =
+          max(0, smcatFile.pageNo - 1);
 
-    // if (svgFile.pageNo == 0) {
-    //   pages.add(svgFile);
-    // } else {
-    //   // we have multiple files.
-    //   var files = await Directory(p.dirname(svgFile.pathTo)).list().toList();
-    //   var svgFiles = files.where((entity) {
-    //     //   getBasename(entity.path) == basename &&
-    //     // log('extenions ${p.extension(entity.path)}');
-    //     return p.extension(entity.path) == '.svg';
-    //   }).toList();
-
-    //   // log('found ${svgFiles.length} svg files');
-
-    //   pages.sort((lhs, rhs) => compareFile(lhs, rhs));
-    // }
-
-    setState(() {
-      currentPage = svgFile.pageNo - 1;
-    });
-
-//     watchDirectory(p.dirname(selectedFile.path), onChanged: () => reload());
-    WatchFolder(
-        pathTo: _smcatFolder.folderPath,
-        extension: 'svg',
-        onChanged: (file, action) => reload(file, action));
-  }
-
-  List<Widget> getButtons() {
-    if (pages.length == 0) {
-      return [Container(width: 0, height: 0)];
+      WatchFolder(
+          pathTo: _smcatFolder.folderPath,
+          extension: 'smcat',
+          onChanged: (file, action) async =>
+              await reload(context, file, action)).watch();
+    } on FileSelectionCanceledError catch (_) {
+      log('User cancelled the file open');
     }
-
-    var buttons = <Widget>[];
-    for (var pageNo = 0; pageNo < pages.length; pageNo++) {
-      buttons.add(Padding(
-          padding: EdgeInsets.only(right: 5, left: 5),
-          child: RaisedButton(
-              color: (pageNo == currentPage ? Colors.blue : Colors.grey),
-              onPressed: () {
-                showPage(pageNo);
-              },
-              child: Text('${pageNo + 1}'))));
-    }
-    return buttons;
-  }
-
-  void showPage(int pageNo) {
-    setState(() {
-      currentPage = pageNo;
-    });
-  }
-
-  void log(String message) {
-    setState(() {
-      logBuffer += message + '\n';
-    });
   }
 
   int compareFile(SvgFile lhs, SvgFile rhs) {
     return lhs.pageNo - rhs.pageNo;
   }
 
-  Widget getModeButtons() {
-    var modes = <Widget>[];
+  Future<void> reload(
+    BuildContext context,
+    String file,
+    FolderChangeAction action,
+  ) async {
+    log('reloading smcat files');
 
-    modes.add(Padding(
-        padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
-            onPressed: () => modeOne(),
-            child: Text('1'),
-            color: selected(Mode.one))));
-    modes.add(Padding(
-        padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
-            onPressed: () => modeTwo(),
-            child: Text('2'),
-            color: selected(Mode.two))));
-    modes.add(Padding(
-        padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
-            onPressed: () => modeTwoByTo(),
-            child: Text('2x2'),
-            color: selected(Mode.twoByTwo))));
-    modes.add(Padding(
-        padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
-            onPressed: () => modeThreeByThree(),
-            child: Text('3x3'),
-            color: selected(Mode.threeByThree))));
-    return Row(children: modes);
-  }
+    var pageProvider = context.read(smcatPageProvider);
+    await _smcatFolder.generateAll();
 
-  Mode mode = Mode.one;
-  void modeOne() {
-    setState(() {
-      logBuffer = '';
-      mode = Mode.one;
-    });
-  }
-
-  void modeTwo() {
-    setState(() => mode = Mode.two);
-  }
-
-  void modeTwoByTo() {
-    setState(() => mode = Mode.twoByTwo);
-  }
-
-  void modeThreeByThree() {
-    setState(() => mode = Mode.threeByThree);
-  }
-
-  Widget getSvgLayout(BuildContext context) {
-    if (currentPage == -1) return Text('Please open an svg file.');
-
-    switch (mode) {
-      case Mode.one:
-        return oneLayout(context);
+    switch (action) {
+      case FolderChangeAction.create:
+        pageProvider.add(SMCatFile(file));
         break;
-      case Mode.two:
-        return twoLayout(context);
+      case FolderChangeAction.modify:
+        pageProvider.replace(SMCatFile(file));
         break;
-      case Mode.twoByTwo:
-        return twoByTwoLayout(context);
+      case FolderChangeAction.move:
         break;
-      case Mode.threeByThree:
-        return threeByThreeLayout(context);
+      case FolderChangeAction.delete:
+        pageProvider.remove(SMCatFile(file));
         break;
     }
 
-    return oneLayout(context);
-  }
-
-  Widget oneLayout(BuildContext context) {
-    return svgForPage(currentPage);
-  }
-
-  Widget twoLayout(BuildContext context) {
-    if (pages.length < 2) {
-      message(context, "Not available as there is only one page");
-      return oneLayout(context);
-    }
-
-    log('two layout');
-
-    return GridView.count(
-        crossAxisCount: 1,
-        childAspectRatio: largest.width / largest.height,
-        children: addPages(2));
-  }
-
-  Widget twoByTwoLayout(BuildContext context) {
-    if (pages.length < 4) {
-      message(context, "Not available as there is less than 4 pages");
-      return oneLayout(context);
-    }
-
-    return GridView.count(
-        crossAxisCount: 2,
-        childAspectRatio: largest.width / largest.height,
-        children: addPages(4));
-  }
-
-  Widget threeByThreeLayout(BuildContext context) {
-    if (pages.length < 9) {
-      message(context, "Not available as there is less than 9 pages");
-      return oneLayout(context);
-    }
-
-    return GridView.count(
-        crossAxisCount: 3,
-        childAspectRatio: largest.width / largest.height,
-        children: addPages(9));
-  }
-
-  Widget svgForPage(int pageNo) {
-    double width = MediaQuery.of(context).size.width;
-    log('scree: $width, largest: ${largest.width}  height: ${largest.height}');
-    return SizedBox(
-        width: min(largest.width.toDouble(), width),
-        height: largest.height.toDouble(),
-        child: SvgPicture.file(File(pages[pageNo].pathTo)));
-  }
-
-  Color selected(Mode buttonMode) {
-    //log('mode: $buttonMode');
-    var color = (mode == buttonMode ? Colors.blue : Colors.grey);
-    // log('color: $color');
-    return color;
-  }
-
-  List<Widget> addPages(int maxPages) {
-    List<Widget> selected = <Widget>[];
-    var i = currentPage;
-
-    var count = 0;
-    while (i < pages.length && count < maxPages) {
-      log('adding page $i');
-      selected.add(svgForPage(i));
-      i++;
-      count++;
-    }
-    log('selected');
-    return selected;
-  }
-
-  void findLargestPage() {
-    for (var svgFile in _smcatFolder.listSvgs) {
-      if (svgFile.height > largest.height) {
-        largest.height = svgFile.height;
-      }
-      if (svgFile.width > largest.width) {
-        largest.width = svgFile.width;
-      }
-    }
-  }
-
-  void reload(String file, FolderChangeAction action) {
-    setState(() {
-      switch (action) {
-        case FolderChangeAction.create:
-          pages.add(SvgFile(file));
-          break;
-        case FolderChangeAction.modify:
-          break;
-        case FolderChangeAction.move:
-          break;
-        case FolderChangeAction.delete:
-          pages.remove(SvgFile(file));
-          break;
-      }
-    });
+    context.read(svgReloadProvider).reload = true;
   }
 }
-
-enum Mode { one, two, twoByTwo, threeByThree }
-
-// class SelectedButton extends StatefulWidget
-// {
-//   @override
-//   State<StatefulWidget> createState() {
-//     return
-//   }
-
-// }

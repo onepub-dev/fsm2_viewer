@@ -8,6 +8,16 @@
             "name": "fsm2_viewer",
             "request": "launch",
             "type": "dart"
+        },
+        {
+            "name": "attach",
+            "request": "attach",
+            "type": "dart",
+            "vmServiceUri": "${command:dart.promptForVmService}"
+
+            
         }
+
+        
     ]
 }
