@@ -10,12 +10,12 @@ import 'package:fsm2_viewer/src/providers/log_provider.dart';
 import 'providers/svg_page_provider.dart';
 
 class PageButtons extends ConsumerWidget {
-  
   PageButtons();
 
   @override
   Widget build(BuildContext context, ScopedReader watch) {
     final pages = watch(smcatPageProvider.state);
+
     /// watch the currentPageProvider so we are rebuilt when the page
     /// no changes.
     int currentPage = watch(currentPageProvider.state);
@@ -24,15 +24,16 @@ class PageButtons extends ConsumerWidget {
       return Container(width: 0, height: 0);
     }
 
-
     currentPage = min(currentPage, pages.length - 1);
 
     var buttons = <Widget>[];
     for (var pageNo = 0; pageNo < pages.length; pageNo++) {
       buttons.add(Padding(
           padding: EdgeInsets.only(right: 5, left: 5),
-          child: RaisedButton(
-              color: (pageNo == currentPage ? Colors.blue : Colors.grey),
+          child: ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(
+                      (pageNo == currentPage ? Colors.blue : Colors.grey))),
               onPressed: () {
                 if (pageNo == 0) context.read(logProvider).clear;
 

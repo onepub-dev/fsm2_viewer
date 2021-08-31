@@ -13,3 +13,26 @@ The viewer is a flutter desktop application and currently it has only been teste
 ![FSM2 View](images/app.png)
 
 
+# Deploying
+
+## Linux
+
+From the project root run:
+
+```
+bin/install_snap.dart
+snapcraft
+```
+
+To publish the snap:
+(requires a developer account at snapcraft.io)
+
+```
+ snapcraft login
+ snapcraft register
+
+ snapcraft push --release=beta fsm2-viewer.snap
+ ```
+ 
+
+

@@ -1,0 +1,22 @@
+name: fms2-viewer
+version: 0.1.0
+summary: View Finite State Machines created via FSM2.
+description: Desktop application that provides the ability to load and view FSM machines 
+  generated via FSM2.
+
+confinement: strict
+base: core18
+grade: stable
+
+apps:
+  super-cool-app:
+    command: fms2_viewer
+    extensions: [flutter-master] # Where "master" defines which Flutter channel to use for the build
+    plugs:
+    - network
+
+parts:
+  fms2-viewer:
+    source: .
+    plugin: flutter
+    flutter-target: lib/main.dart # The main entry-point file of the application

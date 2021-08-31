@@ -6,9 +6,12 @@ var _controller = StreamController<FileSystemEvent>();
 
 typedef OnChanged = void Function();
 
-OnChanged onChanged;
+void _notifyNone() {}
 
-void watchDirectory(String directory, {OnChanged onChanged}) {
+OnChanged _onChanged = _notifyNone;
+
+void watchDirectory(String directory, {OnChanged onChanged = _notifyNone}) {
+  _onChanged = onChanged;
   // ignore: avoid_print
   print('watching $directory');
   Directory(directory)
@@ -17,7 +20,7 @@ void watchDirectory(String directory, {OnChanged onChanged}) {
 }
 
 void onFileSystemEvent(FileSystemEvent event) {
-  onChanged();
+  _onChanged();
   // if (event is FileSystemCreateEvent) {
   //   onCreateEvent(event);
   // } else if (event is FileSystemModifyEvent) {

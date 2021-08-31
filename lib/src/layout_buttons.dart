@@ -28,28 +28,28 @@ class _LayoutButtonsState extends State<LayoutButtons> {
 
     modes.add(Padding(
         padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
+        child: ElevatedButton(
             onPressed: () => modeOne(),
             child: Text('1'),
-            color: selected(Mode.one))));
+            style: selected(Mode.one))));
     modes.add(Padding(
         padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
+        child: ElevatedButton(
             onPressed: () => modeTwo(),
             child: Text('2'),
-            color: selected(Mode.two))));
+            style: selected(Mode.two))));
     modes.add(Padding(
         padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
+        child: ElevatedButton(
             onPressed: () => modeTwoByTo(),
             child: Text('2x2'),
-            color: selected(Mode.twoByTwo))));
+            style: selected(Mode.twoByTwo))));
     modes.add(Padding(
         padding: EdgeInsets.only(right: 5, left: 5),
-        child: RaisedButton(
+        child: ElevatedButton(
             onPressed: () => modeThreeByThree(),
             child: Text('3x3'),
-            color: selected(Mode.threeByThree))));
+            style: selected(Mode.threeByThree))));
     return Row(children: modes);
   }
 
@@ -71,10 +71,12 @@ class _LayoutButtonsState extends State<LayoutButtons> {
     setState(() => mode = Mode.threeByThree);
   }
 
-  Color selected(Mode buttonMode) {
+  ButtonStyle selected(Mode buttonMode) {
     //log('mode: $buttonMode');
     var color = (mode == buttonMode ? Colors.blue : Colors.grey);
     // log('color: $color');
-    return color;
+
+    return ButtonStyle(
+        backgroundColor: MaterialStateProperty.all<Color>(color));
   }
 }

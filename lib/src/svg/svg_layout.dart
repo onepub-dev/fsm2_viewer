@@ -28,19 +28,13 @@ class SVGLayout extends ConsumerWidget {
     switch (mode) {
       case Mode.one:
         return oneLayout(context, currentPage, largest);
-        break;
       case Mode.two:
         return twoLayout(context, currentPage, largest);
-        break;
       case Mode.twoByTwo:
         return twoByTwoLayout(context, currentPage, largest);
-        break;
       case Mode.threeByThree:
         return threeByThreeLayout(context, currentPage, largest);
-        break;
     }
-
-    return oneLayout(context, currentPage, largest);
   }
 
   Widget oneLayout(BuildContext context, int currentPage, Size largest) {
