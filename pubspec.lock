@@ -275,7 +275,7 @@ packages:
       path: "../fsm2"
       relative: true
     source: path
-    version: "3.2.0"
+    version: "3.2.1"
   fuchsia_remote_debug_protocol:
     dependency: transitive
     description: flutter

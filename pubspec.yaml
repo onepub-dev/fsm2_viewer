@@ -1,27 +1,27 @@
 name: fsm2_viewer
-version: 3.0.0
+version: 4.0.0
 description: A viewer for svg state machine graphs generate by the FSM2 project.
 repository: https://github.com/bsutton/fsm2_viewer
-environment: 
+environment:
   sdk: '>=3.2.0 < 4.0.0'
-dependencies: 
+dependencies:
   cupertino_icons: ^1.0.1
   # file_picker_cross: ^5.0.0 # 4.2.6
   file_picker: ^8.0.3
   file_selector: ^1.0.1
-  flutter: 
+  flutter:
     sdk: flutter
   flutter_riverpod: ^2.4.0
   flutter_svg: ^2.0.7
   flutter_svg_provider: ^1.0.0
-  flutter_web_plugins: 
+  flutter_web_plugins:
     sdk: flutter
   fsm2: ^2.0.0
   path: ^1.0.0
   pluto_menu_bar: ^3.0.1
   synchronized: ^3.0.0
-dev_dependencies: 
-  flutter_test: 
+dev_dependencies:
+  flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
@@ -49,5 +49,5 @@ dev_dependencies:
 #   logging: ^1.0.0
 #   matcher: ^0.12.10
 #   stack_trace: ^1.10.0
-flutter: 
+flutter:
   uses-material-design: true

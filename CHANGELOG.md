@@ -1,3 +1,6 @@
+# 4.0.0
+- upgraded to dart 3.2 +
+
 # 0.17.0
 watch and zoom now working.
 added image.
