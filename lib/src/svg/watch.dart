@@ -15,7 +15,7 @@ void watchDirectory(String directory, {OnChanged onChanged = _notifyNone}) {
   // ignore: avoid_print
   print('watching $directory');
   Directory(directory)
-      .watch(events: FileSystemEvent.all)
+      .watch()
       .listen((event) => _controller.add(event));
 }
 

@@ -2,15 +2,24 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final currentPageProvider = StateNotifierProvider((ref) => CurrentPage());
+final currentPageProvider =
+    StateNotifierProvider<CurrentPageProvider, CurrentPage>(
+        (_) => CurrentPageProvider());
 
-class CurrentPage extends StateNotifier<int> {
-  CurrentPage() : super(-1);
+class CurrentPageProvider extends StateNotifier<CurrentPage> {
+  CurrentPageProvider() : super(CurrentPage());
 
-  set currentPage(int page) {
+  CurrentPage get currentPage => state;
+}
+
+class CurrentPage {
+  CurrentPage();
+  int _pageNo = -1;
+
+  set pageNo(int page) {
     log('currentPage set to $page');
-    state = page;
+    _pageNo = page;
   }
 
-  int get currentPage => state;
+  int get pageNo => _pageNo;
 }

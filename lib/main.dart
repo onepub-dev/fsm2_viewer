@@ -3,53 +3,53 @@ import 'dart:io';
 import 'dart:math' hide log;
 
 // ignore: import_of_legacy_library_into_null_safe
-import 'package:file_picker_cross/file_picker_cross.dart';
+// import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fsm2_viewer/src/providers/log_provider.dart';
-import 'package:fsm2_viewer/src/providers/svg_page_provider.dart';
-import 'package:fsm2_viewer/src/providers/svg_reload_provider.dart';
-import 'package:pluto_menu_bar/pluto_menu_bar.dart';
-import 'package:path/path.dart' as p;
-
 import 'package:fsm2/fsm2.dart' hide State;
+import 'package:path/path.dart' as p;
+import 'package:pluto_menu_bar/pluto_menu_bar.dart';
 
 import 'src/layout_buttons.dart';
 import 'src/page_buttons.dart';
 import 'src/providers/current_page.dart';
+import 'src/providers/log_provider.dart';
+import 'src/providers/svg_page_provider.dart';
+import 'src/providers/svg_reload_provider.dart';
+import 'src/svg/size.dart' as s;
 import 'src/svg/svg_layout.dart';
 
-import 'src/svg/size.dart' as s;
-
 void main() {
-  runApp(ProviderScope(child: MyApp()));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
+
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context, ScopedReader watch) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'FSM2 SMCAT Viewer'),
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) => MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          // This is the theme of your application.
+          //
+          // Try running your application with "flutter run". You'll see the
+          // application has a blue toolbar. Then, without quitting the app, try
+          // changing the primarySwatch below to Colors.green and then invoke
+          // "hot reload" (press "r" in the console where you ran "flutter run",
+          // or simply save your changes to "hot reload" in a Flutter IDE).
+          // Notice that the counter didn't reset back to zero; the application
+          // is not restarted.
+          primarySwatch: Colors.blue,
+        ),
+        home: const MyHomePage(title: 'FSM2 SMCAT Viewer'),
+      );
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({required this.title});
+class MyHomePage extends ConsumerStatefulWidget {
+  const MyHomePage({required this.title, super.key});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -63,132 +63,142 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  MyHomePageState createState() => MyHomePageState();
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(StringProperty('title', title));
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class MyHomePageState extends ConsumerState<MyHomePage> {
   late SMCatFolder _smcatFolder;
 
   GlobalKey scaffoldKey = GlobalKey();
 
   final largest = s.Size(0, 0);
 
-  var currentPage = -1;
+  int currentPage = -1;
 
   String logBuffer = '';
 
   final debugging = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            PlutoMenuBar(
-              menus: getMenus(context),
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<GlobalKey<State<StatefulWidget>>>(
+          'scaffoldKey', scaffoldKey))
+      ..add(IntProperty('currentPage', currentPage))
+      ..add(StringProperty('logBuffer', logBuffer))
+      ..add(DiagnosticsProperty<bool>('debugging', debugging))
+      ..add(DiagnosticsProperty<s.Size>('largest', largest));
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
+        ),
+        body: Center(
+          // Center is a layout widget. It takes a single child and positions it
+          // in the middle of the parent.
+          child: Column(
+            children: <Widget>[
+              PlutoMenuBar(
+                menus: getMenus(ref),
+              ),
+              const LayoutButtons(),
+              const Expanded(child: SVGLayout()),
+              const PageButtons(),
+              buildDebugPanel(context)
+            ],
+          ),
+        ),
+      );
+
+  Widget buildDebugPanel(BuildContext context) => debugging
+      ? Consumer(builder: (context, watch, _) {
+          final content = watch.read(logProvider).content;
+          return SizedBox(
+              height: 100, child: SingleChildScrollView(child: Text(content)));
+        })
+      : const SizedBox.shrink();
+
+  List<PlutoMenuItem> getMenus(WidgetRef ref) => [
+        PlutoMenuItem(
+          title: 'File',
+          icon: Icons.home,
+          children: [
+            PlutoMenuItem(
+              title: 'Open',
+              icon: Icons.open_in_new,
+              onTap: () async => openFile(ref),
             ),
-            LayoutButtons(),
-            Expanded(child: SVGLayout()),
-            PageButtons(),
-            buildDebugPanel(context)
+            PlutoMenuItem(
+              title: 'Close',
+              onTap: () => exit(1),
+            ),
           ],
         ),
-      ),
-    );
-  }
+      ];
 
-  Widget buildDebugPanel(BuildContext context) {
-    return debugging
-        ? Consumer(builder: (context, watch, _) {
-            final content = watch(logProvider.state);
-            return SizedBox(
-                height: 100,
-                child: SingleChildScrollView(child: Text(content)));
-          })
-        : Container(width: 0, height: 0);
-  }
+  // void _message(WidgetRef widgetRef, String text) {
+  //   // scaffoldKey.currentState.hideCurrentSnackBar();
+  //   ScaffoldMessenger.of(widgetRef.context).hideCurrentSnackBar();
 
-  List<MenuItem> getMenus(BuildContext context) {
-    return [
-      MenuItem(
-        title: 'File',
-        icon: Icons.home,
-        children: [
-          MenuItem(
-            title: 'Open',
-            icon: Icons.open_in_new,
-            onTap: () => openFile(context),
-          ),
-          MenuItem(
-            title: 'Close',
-            onTap: () => exit(1),
-          ),
-        ],
-      ),
-    ];
-  }
+  //   final snackBar = SnackBar(
+  //     content: Text(text),
+  //   );
 
-  void message(context, String text) {
-    // scaffoldKey.currentState.hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  //   Future.delayed(Duration.zero,
+  //       () => ScaffoldMessenger.of(widgetRef.context).showSnackBar(snackBar));
+  // }
 
-    final snackBar = SnackBar(
-      content: Text(text),
-    );
-
-    Future.delayed(Duration(seconds: 0),
-        () => ScaffoldMessenger.of(context).showSnackBar(snackBar));
-  }
-
-  void openFile(BuildContext context) async {
-    try {
-      FilePickerCross selectedFile = await FilePickerCross.importFromStorage(
-          type: FileTypeCross.any, fileExtension: 'smcat');
-
-      _smcatFolder = SMCatFolder(
-          folderPath: p.dirname(selectedFile.path),
-          basename: SMCatFolder.getBasename(selectedFile.path));
-      await _smcatFolder.generateAll();
-
-      var smcatFile = SMCatFile(selectedFile.path);
-
-      context.read(smcatPageProvider).loadPages(_smcatFolder.list);
-
-      context.read(currentPageProvider).currentPage =
-          max(0, smcatFile.pageNo - 1);
-
-      WatchFolder(
-          pathTo: _smcatFolder.folderPath,
-          extension: 'smcat',
-          onChanged: (file, action) async =>
-              await reload(context, file, action)).watch();
-    } on FileSelectionCanceledError catch (_) {
+  Future<void> openFile(WidgetRef widgetRef) async {
+    final selectedFile = await FilePicker.platform
+        .pickFiles(type: FileType.custom, allowedExtensions: ['smcat']);
+    if (selectedFile == null) {
       log('User cancelled the file open');
+      return;
     }
+    if (selectedFile.count == 0) {
+      return;
+    }
+
+    final pathToSelected = selectedFile.files[0].path!;
+    _smcatFolder = SMCatFolder(
+        folderPath: p.dirname(pathToSelected),
+        basename: SMCatFolder.getBasename(pathToSelected));
+    await _smcatFolder.generateAll(force: true);
+
+    final smcatFile = SMCatFile(pathToSelected);
+
+    widgetRef.read(smcatPageProvider).loadPages(_smcatFolder.list);
+
+    widgetRef.read(currentPageProvider).pageNo = max(0, smcatFile.pageNo - 1);
+
+    await WatchFolder(
+            pathTo: _smcatFolder.folderPath,
+            extension: 'smcat',
+            onChanged: (file, action) async => reload(widgetRef, file, action))
+        .watch();
   }
 
-  int compareFile(SvgFile lhs, SvgFile rhs) {
-    return lhs.pageNo - rhs.pageNo;
-  }
+  // int _compareFile(SvgFile lhs, SvgFile rhs) => lhs.pageNo - rhs.pageNo;
 
   Future<void> reload(
-    BuildContext context,
+    WidgetRef ref,
     String file,
     FolderChangeAction action,
   ) async {
     log('reloading smcat files');
 
-    var pageProvider = context.read(smcatPageProvider);
-    await _smcatFolder.generateAll();
+    final pageProvider = ref.read(smcatPageProvider);
+    await _smcatFolder.generateAll(force: true);
 
     switch (action) {
       case FolderChangeAction.create:
@@ -204,6 +214,6 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
     }
 
-    context.read(svgReloadProvider).reload = true;
+    ref.read(svgReloadProvider).reload = true;
   }
 }

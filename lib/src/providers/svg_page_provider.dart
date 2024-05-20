@@ -2,77 +2,74 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fsm2/fsm2.dart';
+
 import 'largest_page.dart';
 import 'svg_page.dart';
 
-final smcatPageProvider =
-    StateNotifierProvider((ref) => SMCatPageProvider(ref));
+final smcatPageProvider = StateNotifierProvider<SMCatPageProvider, SMCatPages>(
+    SMCatPageProvider.new);
 
-class SMCatPageProvider extends StateNotifier<List<SMCatPage>> {
-  final ProviderReference ref;
-  SMCatPageProvider(this.ref) : super(<SMCatPage>[]);
+class SMCatPageProvider extends StateNotifier<SMCatPages> {
+  SMCatPageProvider(Ref ref) : super(SMCatPages(ref));
 
-  set pages(List<SMCatPage> pages) => state = pages;
+  SMCatPages get pages => state;
+}
 
-  List<SMCatPage> get pages => state;
+class SMCatPages {
 
-  void loadPages(List<SMCatFile> svgs) {
-    var pages = <SMCatPage>[];
+  SMCatPages(this.ref);
+  List<SMCatPage> pages = <SMCatPage>[];
+  Ref ref;
 
-    for (final svgFile in svgs) {
-      pages.add(SMCatPage(svgFile));
+  int get length => pages.length;
+
+  void loadPages(List<SMCatFile> smcatFiles) {
+    pages = <SMCatPage>[];
+
+    for (final smcatFile in smcatFiles) {
+      pages.add(SMCatPage(smcatFile));
     }
 
-    log('#########################Replaced pages:');
+    log('#########################Loaded pages:');
     log('pagecount = ${pages.length}');
 
-    state = pages;
-
-    ref.read(largestPageProvider).update(svgs);
+    ref.read(largestPageProvider).update(smcatFiles);
   }
 
   void add(SMCatFile smcatFile) {
-    var pages = state;
     final page = SMCatPage(smcatFile);
     pages.add(page);
-    state = pages;
 
     log('Added page: ${page.pathToSvg} key: ${page.key}');
     log('pagecount = ${pages.length}');
   }
 
   void remove(SMCatFile svgFile) {
-    var pages = state;
-
     for (final page in pages) {
       if (page.pathToSvg == svgFile.pathTo) {
         pages.remove(page);
         break;
       }
     }
-
-    state = pages;
   }
 
   void replace(SMCatFile svgFile) {
     log('replacing ${svgFile.pathTo}');
-    var location = find(svgFile);
+    final location = find(svgFile);
 
-    var pages = state;
     final page = SMCatPage(svgFile);
     log('Replacing page: ${page.pathToSvg} new key: ${page.key} index: $location');
 
     if (location != -1) {
-      pages.removeAt(location);
-      pages.insert(location, page);
+      pages..removeAt(location)
+      ..insert(location, page);
     } else {
       pages.add(page);
     }
-    state = pages;
   }
 
   int find(SMCatFile smcatFile) {
-    bool found = false;
+    var found = false;
     var index = 0;
     for (final page in pages) {
       if (page.pathToSvg == smcatFile.svgPath) {
