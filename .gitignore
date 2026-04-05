@@ -48,3 +48,4 @@ app.*.map.json
 .vscode
 .fvm
 .failed_tracker
+fsm2.code-workspace
