@@ -4,7 +4,7 @@ import 'dart:math' hide log;
 
 // ignore: import_of_legacy_library_into_null_safe
 // import 'package:file_picker_cross/file_picker_cross.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart' as fs;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -159,17 +159,15 @@ class MyHomePageState extends ConsumerState<MyHomePage> {
   // }
 
   Future<void> openFile(WidgetRef widgetRef) async {
-    final selectedFile = await FilePicker.platform
-        .pickFiles(type: FileType.custom, allowedExtensions: ['smcat']);
+    final selectedFile = await fs.openFile(acceptedTypeGroups: [
+      const fs.XTypeGroup(label: 'SMCAT', extensions: ['smcat'])
+    ]);
     if (selectedFile == null) {
       log('User cancelled the file open');
       return;
     }
-    if (selectedFile.count == 0) {
-      return;
-    }
 
-    final pathToSelected = selectedFile.files[0].path!;
+    final pathToSelected = selectedFile.path;
     _smcatFolder = SMCatFolder(
         folderPath: p.dirname(pathToSelected),
         basename: SMCatFolder.getBasename(pathToSelected));

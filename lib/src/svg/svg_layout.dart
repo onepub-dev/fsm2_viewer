@@ -139,7 +139,10 @@ class SVGLayout extends ConsumerWidget {
       content: Text(text),
     );
 
-    Future.delayed(Duration.zero,
-        () => ScaffoldMessenger.of(context).showSnackBar(snackBar));
+    Future.delayed(Duration.zero, () {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      }
+    });
   }
 }

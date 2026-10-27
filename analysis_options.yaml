@@ -11,6 +11,10 @@ linter:
   
 
 analyzer:
+  exclude:
+    - build/**
+    - web/**
+    - linux/**
   strong-mode:
     implicit-casts: false
     implicit-dynamic: false
